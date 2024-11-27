@@ -1,0 +1,14 @@
+{
+    "headers": [
+      {
+        "source": "/firebase-config.js",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/javascript"
+          }
+        ]
+      }
+    ]
+  }
+  

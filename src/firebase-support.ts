@@ -84,7 +84,8 @@ export const subscribeFcmNotifications = async (
     const registration = await navigator.serviceWorker.ready;
 
     const fcmToken = await getToken(messaging, {
-      vapidKey: "YOUR_VAPID_KEY",
+      vapidKey:
+        "BKCaOZM3_EVTZzro6CCEAyTZiKfaoTKDIP4WLOgqUITVaA6TE6JLNoPvwLCBzReq1H59B_EWgi_5tWqRYUANDwc",
       serviceWorkerRegistration: registration,
     });
 

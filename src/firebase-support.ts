@@ -8,7 +8,7 @@ import {
 import { Client, PushNotification } from "@twilio/conversations";
 
 // Import the Firebase configuration
-import firebaseConfig from "../public/firebase-config.js";
+import firebaseConfig from "/firebase-config.js";
 
 let app: FirebaseApp;
 let messaging: Messaging;
@@ -74,7 +74,10 @@ export const subscribeFcmNotifications = async (
       }
     });
   } catch (error) {
-    console.error("FcmNotifications: Error subscribing to notifications:", error);
+    console.error(
+      "FcmNotifications: Error subscribing to notifications:",
+      error
+    );
   }
 };
 

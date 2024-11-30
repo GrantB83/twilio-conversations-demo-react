@@ -32,17 +32,16 @@ export async function addConversation(
   client?: Client,
   addNotifications?: (notifications: NotificationsType) => void
 ): Promise<Conversation> {
-  if (client === undefined) {
-    throw new Error(
-      "Client is suddenly undefined, are you sure everything is ok?"
-    );
+  if (!client) {
+    throw new Error("Twilio Conversations client is undefined.");
   }
 
-  if (name.length === 0) {
-    throw new Error("Conversation name is empty");
+  if (!name || name.trim().length === 0) {
+    throw new Error("Conversation name is empty.");
   }
 
   try {
+    console.log("Creating new conversation with name:", name);
     const conversation = await client.createConversation({
       friendlyName: name,
     });
@@ -57,8 +56,13 @@ export async function addConversation(
     });
 
     return conversation;
-  } catch (e) {
-    unexpectedErrorNotification(e.message, addNotifications);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (e: any) {
+    console.error("Error in addConversation:", e);
+    unexpectedErrorNotification(
+      e.message || "Failed to create conversation.",
+      addNotifications
+    );
     throw e;
   }
 }

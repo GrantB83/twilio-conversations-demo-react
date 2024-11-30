@@ -25,9 +25,52 @@ const CreateConversationButton: React.FC<NewConvoProps> = (
   const local = useSelector((state: AppState) => state.local);
   const createNewConvo = getTranslation(local, "createNewConvo");
   const [isModalOpen, setIsModalOpen] = useState(false);
+
   const handleOpen = () => setIsModalOpen(true);
 
-  console.log("CreateConversationButton props.client:", props.client);
+  const handleSave = async (title: string) => {
+    if (!props.client) {
+      addNotifications?.([
+        {
+          id: Date.now(),
+          message: "Conversations client is not initialized.",
+          variant: "error",
+          dismissAfter: 5000,
+        },
+      ]);
+      return;
+    }
+
+    try {
+      console.log("Creating conversation with title:", title);
+
+      const convo = await addConversation(
+        title,
+        updateParticipants,
+        props.client,
+        addNotifications
+      );
+
+      if (!convo) {
+        throw new Error("Conversation creation returned undefined.");
+      }
+
+      console.log("Conversation created successfully:", convo);
+      setIsModalOpen(false);
+      updateCurrentConversation(convo.sid);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      console.error("Error creating conversation:", error);
+      addNotifications?.([
+        {
+          id: Date.now(),
+          message: error.message || "Failed to create conversation.",
+          variant: "error",
+          dismissAfter: 5000,
+        },
+      ]);
+    }
+  };
 
   return (
     <>
@@ -39,41 +82,8 @@ const CreateConversationButton: React.FC<NewConvoProps> = (
         title=""
         type="new"
         isModalOpen={isModalOpen}
-        onCancel={() => {
-          setIsModalOpen(false);
-        }}
-        onSave={async (title: string) => {
-          try {
-            if (!props.client) {
-              throw new Error(
-                "Twilio Conversations Client is not initialized."
-              );
-            }
-            console.log("Creating conversation with title:", title);
-
-            const convo = await addConversation(
-              title,
-              updateParticipants,
-              props.client,
-              addNotifications
-            );
-
-            console.log("Conversation created successfully:", convo);
-            setIsModalOpen(false);
-            updateCurrentConversation(convo.sid);
-          } catch (error) {
-            console.error("Error creating conversation:", error);
-            addNotifications &&
-              addNotifications([
-                {
-                  id: Date.now(),
-                  message: "Failed to create conversation.",
-                  variant: "error",
-                  dismissAfter: 5000,
-                },
-              ]);
-          }
-        }}
+        onCancel={() => setIsModalOpen(false)}
+        onSave={handleSave}
       />
     </>
   );

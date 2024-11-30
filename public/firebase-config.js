@@ -7,10 +7,10 @@ const firebaseConfig = {
   appId: "1:726570560782:web:4e935f063e7e7120467b5f",
 };
 
-if (typeof self !== "undefined" && self instanceof ServiceWorkerGlobalScope) {
+// Expose the config for service workers
+if (typeof self !== "undefined") {
   self.firebaseConfig = firebaseConfig;
-} else if (typeof window !== "undefined") {
-  window.firebaseConfig = firebaseConfig;
 }
 
+// Export the config for the main app
 export default firebaseConfig;

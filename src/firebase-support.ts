@@ -10,6 +10,7 @@ declare global {
     };
   }
 }
+
 import { FirebaseApp, initializeApp } from "firebase/app";
 import {
   Messaging,
@@ -19,8 +20,8 @@ import {
 } from "firebase/messaging";
 import { Client, PushNotification } from "@twilio/conversations";
 
-let app: FirebaseApp;
-let messaging: Messaging;
+let app: FirebaseApp | null = null;
+let messaging: Messaging | null = null;
 let initialized = false;
 
 try {
@@ -53,8 +54,8 @@ export const initFcmServiceWorker = async (): Promise<void> => {
       "firebase-messaging-sw.js"
     );
     console.log("ServiceWorker registered with scope:", registration.scope);
-  } catch (e) {
-    console.error("ServiceWorker registration failed:", e);
+  } catch (error) {
+    console.error("ServiceWorker registration failed:", error);
   }
 };
 
@@ -73,6 +74,10 @@ export const subscribeFcmNotifications = async (
       return;
     }
 
+    if (!messaging) {
+      throw new Error("Messaging instance is not available.");
+    }
+
     const fcmToken = await getToken(messaging);
     if (!fcmToken) {
       console.log("FcmNotifications: can't get FCM token");
@@ -81,6 +86,7 @@ export const subscribeFcmNotifications = async (
 
     console.log("FcmNotifications: got FCM token", fcmToken);
     await convoClient.setPushRegistrationId("fcm", fcmToken);
+
     onMessage(messaging, (payload) => {
       console.log("FcmNotifications: push received", payload);
       if (convoClient) {

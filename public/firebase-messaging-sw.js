@@ -1,39 +1,30 @@
-// Import Firebase scripts for app and messaging
 importScripts("https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js");
 importScripts(
   "https://www.gstatic.com/firebasejs/8.10.0/firebase-messaging.js"
 );
-importScripts("firebase-config.js"); // Ensure firebase-config.js is available in the same directory
+importScripts("firebase-config.js");
 
-if (typeof firebaseConfig !== "undefined") {
-  firebase.initializeApp(firebaseConfig);
+// Check if firebaseConfig is defined
+if (self.firebaseConfig) {
+  firebase.initializeApp(self.firebaseConfig);
+
   console.log(
-    `${new Date().toJSON()}  [firebase-messaging-sw] Firebase messaging initialized successfully`
+    `${new Date().toJSON()} [firebase-messaging-sw] Initialized messaging`
   );
 
-  // Set up background message handler
-  firebase.messaging().setBackgroundMessageHandler((payload) => {
-    console.log(
-      `${new Date().toJSON()}  [firebase-messaging-sw] Received background message: `,
-      payload
-    );
+  const messaging = firebase.messaging();
 
+  messaging.setBackgroundMessageHandler((payload) => {
     if (payload.type !== "twilio.conversations.new_message") {
-      console.warn(
-        `${new Date().toJSON()}  [firebase-messaging-sw] Unsupported message type: `,
-        payload.type
-      );
       return;
     }
 
-    // Prepare notification data
-    const notificationTitle = payload.data.conversation_title || "New Message";
+    const notificationTitle = payload.data.conversation_title;
     const notificationOptions = {
-      body: payload.data.twi_body || "You have a new message",
-      icon: "favicon.ico", // Replace with a valid icon path
+      body: payload.data.twi_body,
+      icon: "favicon.ico",
     };
 
-    // Show the notification
     return self.registration.showNotification(
       notificationTitle,
       notificationOptions
@@ -41,6 +32,6 @@ if (typeof firebaseConfig !== "undefined") {
   });
 } else {
   console.error(
-    `${new Date().toJSON()}  [firebase-messaging-sw] No firebase configuration found!`
+    `${new Date().toJSON()} [firebase-messaging-sw] Firebase configuration not found!`
   );
 }

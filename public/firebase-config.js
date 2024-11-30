@@ -9,6 +9,3 @@ const firebaseConfig = {
 
 // Attach firebaseConfig to the global scope for use in service workers
 self.firebaseConfig = firebaseConfig;
-
-// Export the config for the main app
-export default firebaseConfig;

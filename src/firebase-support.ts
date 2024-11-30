@@ -70,7 +70,10 @@ export const subscribeFcmNotifications = async (
   try {
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
-      console.log("FcmNotifications: can't request permission:", permission);
+      console.log(
+        "FcmNotifications: Notification permission denied:",
+        permission
+      );
       return;
     }
 
@@ -78,17 +81,23 @@ export const subscribeFcmNotifications = async (
       throw new Error("Messaging instance is not available.");
     }
 
-    const fcmToken = await getToken(messaging);
+    const registration = await navigator.serviceWorker.ready;
+
+    const fcmToken = await getToken(messaging, {
+      vapidKey: "YOUR_VAPID_KEY",
+      serviceWorkerRegistration: registration,
+    });
+
     if (!fcmToken) {
-      console.log("FcmNotifications: can't get FCM token");
+      console.log("FcmNotifications: Unable to get FCM token");
       return;
     }
 
-    console.log("FcmNotifications: got FCM token", fcmToken);
+    console.log("FcmNotifications: FCM token received:", fcmToken);
     await convoClient.setPushRegistrationId("fcm", fcmToken);
 
     onMessage(messaging, (payload) => {
-      console.log("FcmNotifications: push received", payload);
+      console.log("FcmNotifications: Push notification received:", payload);
       if (convoClient) {
         convoClient.handlePushNotification(payload);
       }
@@ -107,7 +116,8 @@ export const showNotification = (pushNotification: PushNotification): void => {
     return;
   }
 
-  const notificationTitle = pushNotification.data?.conversationTitle || "";
+  const notificationTitle =
+    pushNotification.data?.conversationTitle || "New Message";
 
   const notificationOptions = {
     body: pushNotification.body ?? "",

@@ -7,4 +7,5 @@ const firebaseConfig = {
   appId: "1:726570560782:web:4e935f063e7e7120467b5f",
 };
 
-export default firebaseConfig;
+// Expose the object globally for scripts that load this file
+window.firebaseConfig = firebaseConfig;

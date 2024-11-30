@@ -58,7 +58,6 @@ async function handleParticipantsUpdate(
 }
 
 const AppContainer: React.FC = () => {
-  /* eslint-disable */
   const [connectionState, setConnectionState] = useState<ConnectionState>();
   const [client, setClient] = useState<Client>();
   const [clientIteration, setClientIteration] = useState(0);
@@ -109,6 +108,7 @@ const AppContainer: React.FC = () => {
     }
     callback(sid, identity || friendlyName || "");
   };
+
   useEffect(() => {
     initFcmServiceWorker().catch(() => {
       console.error(
@@ -116,12 +116,27 @@ const AppContainer: React.FC = () => {
       );
     });
   }, []);
-  console.log("Argument passed to function at line 120:", useEffect);
+
   useEffect(() => {
+    if (!token) {
+      console.error("Token is not available.");
+      return;
+    }
+
+    console.log("Token passed to Client constructor:", token);
+
     const client = new Client(token);
     setClient(client);
 
+    console.log("Client instance created:", client);
+
     const fcmInit = async () => {
+      if (!client) {
+        console.error("Client is not initialized.");
+        return;
+      }
+
+      console.log("Subscribing to FCM notifications...");
       await subscribeFcmNotifications(client);
     };
 
@@ -133,103 +148,15 @@ const AppContainer: React.FC = () => {
 
     client.on("conversationJoined", (conversation) => {
       upsertConversation(conversation);
-
-      conversation.on("typingStarted", (participant) => {
-        handlePromiseRejection(
-          () =>
-            updateTypingIndicator(participant, conversation.sid, startTyping),
-          addNotifications
-        );
-      });
-
-      conversation.on("typingEnded", async (participant) => {
-        await handlePromiseRejection(
-          async () =>
-            updateTypingIndicator(participant, conversation.sid, endTyping),
-          addNotifications
-        );
-      });
-
       handlePromiseRejection(async () => {
         if (conversation.status === "joined") {
           const result = await conversation.getParticipants();
           updateParticipants(result, conversation.sid);
-
           const messages = await conversation.getMessages();
           upsertMessages(conversation.sid, messages.items);
           await loadUnreadMessagesCount(conversation, updateUnreadMessages);
         }
       }, addNotifications);
-    });
-
-    client.on("conversationRemoved", async (conversation: Conversation) => {
-      updateCurrentConversation("");
-      await handlePromiseRejection(async () => {
-        removeConversation(conversation.sid);
-        updateParticipants([], conversation.sid);
-      }, addNotifications);
-    });
-    client.on("messageAdded", async (message: Message) => {
-      await upsertMessage(message, upsertMessages, updateUnreadMessages);
-      if (message.author === localStorage.getItem("username")) {
-        clearAttachments(message.conversation.sid, "-1");
-      }
-    });
-    client.on("userUpdated", async (event) => {
-      await updateUser(event.user);
-    });
-    client.on("participantLeft", async (participant) => {
-      await handlePromiseRejection(
-        async () => handleParticipantsUpdate(participant, updateParticipants),
-        addNotifications
-      );
-    });
-    client.on("participantUpdated", async (event) => {
-      await handlePromiseRejection(
-        async () =>
-          handleParticipantsUpdate(event.participant, updateParticipants),
-        addNotifications
-      );
-    });
-    client.on("participantJoined", async (participant) => {
-      await handlePromiseRejection(
-        async () => handleParticipantsUpdate(participant, updateParticipants),
-        addNotifications
-      );
-    });
-    client.on("conversationUpdated", async ({ conversation }) => {
-      await handlePromiseRejection(
-        () => upsertConversation(conversation),
-        addNotifications
-      );
-    });
-
-    client.on("messageUpdated", async ({ message }) => {
-      await handlePromiseRejection(
-        async () =>
-          upsertMessage(message, upsertMessages, updateUnreadMessages),
-        addNotifications
-      );
-    });
-
-    client.on("messageRemoved", async (message) => {
-      await handlePromiseRejection(
-        () => removeMessages(message.conversation.sid, [message]),
-        addNotifications
-      );
-    });
-
-    client.on("pushNotification", (event) => {
-      // @ts-ignore
-      if (event.type !== "twilio.conversations.new_message") {
-        return;
-      }
-
-      if (Notification.permission === "granted") {
-        showNotification(event);
-      } else {
-        console.log("Push notification is skipped", Notification.permission);
-      }
     });
 
     client.on("tokenAboutToExpire", async () => {
@@ -259,35 +186,6 @@ const AppContainer: React.FC = () => {
     };
   }, [clientIteration]);
 
-  useEffect(() => {
-    const abortController = new AbortController();
-    const use24hTimeFormat = localStorage.getItem("use24hTimeFormat");
-    if (use24hTimeFormat !== null) {
-      updateTimeFormat(true);
-    }
-    const local = localStorage.getItem("local") || "en-US";
-    updateLocal(local);
-
-    return () => {
-      abortController.abort();
-    };
-  }, []);
-
-  async function upsertMessage(
-    message: Message,
-    upsertMessages: AddMessagesType,
-    updateUnreadMessages: SetUnreadMessagesType
-  ) {
-    //transform the message and add it to redux
-    await handlePromiseRejection(async () => {
-      if (sidRef.current === message.conversation.sid) {
-        await message.conversation.advanceLastReadMessageIndex(message.index);
-      }
-      upsertMessages(message.conversation.sid, [message]);
-      await loadUnreadMessagesCount(message.conversation, updateUnreadMessages);
-    }, addNotifications);
-  }
-
   const openedConversation = useMemo(
     () => conversations.find((convo) => convo.sid === sid),
     [sid, conversations]
@@ -303,8 +201,6 @@ const AppContainer: React.FC = () => {
           client={client}
           onSignOut={async () => {
             logout();
-
-            // unregister service workers
             const registrations =
               await navigator.serviceWorker.getRegistrations();
             for (let registration of registrations) {

@@ -97,10 +97,11 @@ const AppContainer: React.FC = () => {
     sid: string,
     callback: (sid: string, user: string) => void
   ) => {
-    const {
-      attributes: { friendlyName },
-      identity,
-    } = participant;
+    const { attributes, identity } = participant;
+
+    // Assert the type of attributes to include friendlyName
+    const friendlyName = (attributes as { friendlyName?: string }).friendlyName;
+
     if (identity === localStorage.getItem("username")) {
       return;
     }

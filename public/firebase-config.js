@@ -7,5 +7,10 @@ const firebaseConfig = {
   appId: "1:726570560782:web:4e935f063e7e7120467b5f",
 };
 
-// Expose the object globally for scripts that load this file
-window.firebaseConfig = firebaseConfig;
+if (typeof self !== "undefined" && self instanceof ServiceWorkerGlobalScope) {
+  self.firebaseConfig = firebaseConfig;
+} else if (typeof window !== "undefined") {
+  window.firebaseConfig = firebaseConfig;
+}
+
+export default firebaseConfig;

@@ -1,30 +1,46 @@
+// Import Firebase scripts for app and messaging
 importScripts("https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js");
 importScripts(
   "https://www.gstatic.com/firebasejs/8.10.0/firebase-messaging.js"
 );
-importScripts("firebase-config.js");
+importScripts("firebase-config.js"); // Ensure firebase-config.js is available in the same directory
 
-if (firebaseConfig) {
+if (typeof firebaseConfig !== "undefined") {
   firebase.initializeApp(firebaseConfig);
   console.log(
-    `${new Date().toJSON()}  [firebase-messaging-sw] Initialized messaging`
+    `${new Date().toJSON()}  [firebase-messaging-sw] Firebase messaging initialized successfully`
   );
 
+  // Set up background message handler
   firebase.messaging().setBackgroundMessageHandler((payload) => {
+    console.log(
+      `${new Date().toJSON()}  [firebase-messaging-sw] Received background message: `,
+      payload
+    );
+
     if (payload.type !== "twilio.conversations.new_message") {
+      console.warn(
+        `${new Date().toJSON()}  [firebase-messaging-sw] Unsupported message type: `,
+        payload.type
+      );
       return;
     }
 
-    const notificationTitle = payload.data.conversation_title;
+    // Prepare notification data
+    const notificationTitle = payload.data.conversation_title || "New Message";
     const notificationOptions = {
-      body: payload.data.twi_body,
-      icon: "favicon.ico",
+      body: payload.data.twi_body || "You have a new message",
+      icon: "favicon.ico", // Replace with a valid icon path
     };
 
-    self.registration.showNotification(notificationTitle, notificationOptions);
+    // Show the notification
+    return self.registration.showNotification(
+      notificationTitle,
+      notificationOptions
+    );
   });
 } else {
-  console.log(
+  console.error(
     `${new Date().toJSON()}  [firebase-messaging-sw] No firebase configuration found!`
   );
 }

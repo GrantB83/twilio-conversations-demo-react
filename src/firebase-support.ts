@@ -1,3 +1,4 @@
+console.log("Loaded Firebase Config:", (window as any).firebaseConfig);
 import { FirebaseApp, initializeApp } from "firebase/app";
 import {
   Messaging,

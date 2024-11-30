@@ -116,6 +116,7 @@ const AppContainer: React.FC = () => {
       );
     });
   }, []);
+  console.log("Argument passed to function at line 120:", useEffect);
   useEffect(() => {
     const client = new Client(token);
     setClient(client);

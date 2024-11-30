@@ -7,26 +7,29 @@ import {
 } from "firebase/messaging";
 import { Client, PushNotification } from "@twilio/conversations";
 
-// Import the Firebase configuration
-import firebaseConfig from "/firebase-config.js";
-
 let app: FirebaseApp;
 let messaging: Messaging;
 let initialized = false;
 
-try {
-  // Debug: Log the Firebase configuration
-  console.log("Loaded Firebase Config:", firebaseConfig);
+// Fetch Firebase configuration dynamically
+const loadFirebaseConfig = async (): Promise<void> => {
+  try {
+    const response = await fetch("/firebase-config.js");
+    const text = await response.text();
+    const config = eval(`(${text})`); // Parse the JavaScript object from the file
+    console.log("Loaded Firebase Config:", config);
 
-  // Initialize Firebase
-  app = initializeApp(firebaseConfig);
-  messaging = getMessaging(app);
-  initialized = true;
+    app = initializeApp(config);
+    messaging = getMessaging(app);
+    initialized = true;
 
-  console.log("Firebase initialized successfully");
-} catch (error) {
-  console.warn("Couldn't initialize firebase app:", error);
-}
+    console.log("Firebase initialized successfully");
+  } catch (error) {
+    console.error("Error loading Firebase Config:", error);
+  }
+};
+
+loadFirebaseConfig();
 
 export const initFcmServiceWorker = async (): Promise<void> => {
   if (!initialized) {
@@ -87,10 +90,7 @@ export const showNotification = (pushNotification: PushNotification): void => {
     return;
   }
 
-  // TODO: remove when new version of sdk will be released
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  const notificationTitle = pushNotification.data.conversationTitle || "";
+  const notificationTitle = pushNotification.data?.conversationTitle || "";
 
   const notificationOptions = {
     body: pushNotification.body ?? "",
@@ -100,8 +100,7 @@ export const showNotification = (pushNotification: PushNotification): void => {
   const notification = new Notification(notificationTitle, notificationOptions);
   notification.onclick = (event) => {
     console.log("notification.onclick", event);
-    event.preventDefault(); // prevent the browser from focusing the Notification's tab
-    // TODO: navigate to the corresponding conversation
+    event.preventDefault(); // Prevent the browser from focusing the Notification's tab
     notification.close();
   };
 };

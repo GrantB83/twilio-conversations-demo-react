@@ -1,5 +1,6 @@
 console.log("Loaded Firebase Config:", (window as any).firebaseConfig);
 import { FirebaseApp, initializeApp } from "firebase/app";
+import firebaseConfig from "../public/firebase-config.js";
 import {
   Messaging,
   getMessaging,

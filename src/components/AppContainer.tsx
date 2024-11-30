@@ -32,6 +32,10 @@ import {
   showNotification,
 } from "../firebase-support";
 
+interface TokenData {
+  token: string;
+}
+
 async function loadUnreadMessagesCount(
   convo: Conversation,
   updateUnreadMessages: SetUnreadMessagesType
@@ -61,7 +65,9 @@ const AppContainer: React.FC = () => {
   const [connectionState, setConnectionState] = useState<ConnectionState>();
   const [client, setClient] = useState<Client>();
   const [clientIteration, setClientIteration] = useState(0);
-  const token = useSelector((state: AppState) => state.token);
+  const tokenData = useSelector((state: AppState) => state.token) as
+    | string
+    | TokenData;
   const conversations = useSelector((state: AppState) => state.convos);
   const sid = useSelector((state: AppState) => state.sid);
   const sidRef = useRef("");
@@ -97,11 +103,12 @@ const AppContainer: React.FC = () => {
     sid: string,
     callback: (sid: string, user: string) => void
   ) => {
-    const { attributes, identity } = participant;
-
-    // Assert the type of attributes to include friendlyName
-    const friendlyName = (attributes as { friendlyName?: string }).friendlyName;
-
+    const {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      attributes: { friendlyName },
+      identity,
+    } = participant;
     if (identity === localStorage.getItem("username")) {
       return;
     }
@@ -117,7 +124,21 @@ const AppContainer: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    console.log("Token value:", token);
+    const token =
+      typeof tokenData === "string"
+        ? tokenData
+        : (tokenData as TokenData)?.token || "";
+
+    if (!token) {
+      console.error(
+        "Token is not available or improperly formatted:",
+        tokenData
+      );
+      return;
+    }
+
+    console.log("Using token:", token); // Debug log for the token
+
     const client = new Client(token);
     setClient(client);
 
@@ -162,93 +183,26 @@ const AppContainer: React.FC = () => {
       }, addNotifications);
     });
 
-    client.on("conversationRemoved", async (conversation: Conversation) => {
-      updateCurrentConversation("");
-      await handlePromiseRejection(async () => {
-        removeConversation(conversation.sid);
-        updateParticipants([], conversation.sid);
-      }, addNotifications);
-    });
-
-    client.on("messageAdded", async (message: Message) => {
-      await upsertMessage(message, upsertMessages, updateUnreadMessages);
-      if (message.author === localStorage.getItem("username")) {
-        clearAttachments(message.conversation.sid, "-1");
-      }
-    });
-
-    client.on("userUpdated", async (event) => {
-      await updateUser(event.user);
-    });
-
-    client.on("participantLeft", async (participant) => {
-      await handlePromiseRejection(
-        async () => handleParticipantsUpdate(participant, updateParticipants),
-        addNotifications
-      );
-    });
-
-    client.on("participantUpdated", async (event) => {
-      await handlePromiseRejection(
-        async () =>
-          handleParticipantsUpdate(event.participant, updateParticipants),
-        addNotifications
-      );
-    });
-
-    client.on("participantJoined", async (participant) => {
-      await handlePromiseRejection(
-        async () => handleParticipantsUpdate(participant, updateParticipants),
-        addNotifications
-      );
-    });
-
-    client.on("conversationUpdated", async ({ conversation }) => {
-      await handlePromiseRejection(
-        () => upsertConversation(conversation),
-        addNotifications
-      );
-    });
-
-    client.on("messageUpdated", async ({ message }) => {
-      await handlePromiseRejection(
-        async () =>
-          upsertMessage(message, upsertMessages, updateUnreadMessages),
-        addNotifications
-      );
-    });
-
-    client.on("messageRemoved", async (message) => {
-      await handlePromiseRejection(
-        () => removeMessages(message.conversation.sid, [message]),
-        addNotifications
-      );
-    });
-
-    client.on("pushNotification", (event) => {
-      if (event.type !== "twilio.conversations.new_message") {
-        return;
-      }
-
-      if (Notification.permission === "granted") {
-        showNotification(event);
-      } else {
-        console.log("Push notification is skipped", Notification.permission);
-      }
-    });
-
     client.on("tokenAboutToExpire", async () => {
       if (username && password) {
-        const token = await getToken(username, password);
-        await client.updateToken(token);
-        login(token);
+        const tokenResponse = await getToken(username, password);
+        const newToken =
+          typeof tokenResponse === "string"
+            ? tokenResponse
+            : (tokenResponse as TokenData)?.token || "";
+        await client.updateToken(newToken);
+        login(newToken);
       }
     });
 
     client.on("tokenExpired", async () => {
       if (username && password) {
-        const token = await getToken(username, password);
-        login(token);
+        const tokenResponse = await getToken(username, password);
+        const newToken =
+          typeof tokenResponse === "string"
+            ? tokenResponse
+            : (tokenResponse as TokenData)?.token || "";
+        login(newToken);
         setClientIteration((x) => x + 1);
       }
     });

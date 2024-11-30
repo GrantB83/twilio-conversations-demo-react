@@ -27,6 +27,8 @@ const CreateConversationButton: React.FC<NewConvoProps> = (
   const [isModalOpen, setIsModalOpen] = useState(false);
   const handleOpen = () => setIsModalOpen(true);
 
+  console.log("CreateConversationButton props.client:", props.client);
+
   return (
     <>
       <Button fullWidth variant="secondary" onClick={handleOpen}>
@@ -41,14 +43,36 @@ const CreateConversationButton: React.FC<NewConvoProps> = (
           setIsModalOpen(false);
         }}
         onSave={async (title: string) => {
-          const convo = await addConversation(
-            title,
-            updateParticipants,
-            props.client,
-            addNotifications
-          );
-          setIsModalOpen(false);
-          updateCurrentConversation(convo.sid);
+          try {
+            if (!props.client) {
+              throw new Error(
+                "Twilio Conversations Client is not initialized."
+              );
+            }
+            console.log("Creating conversation with title:", title);
+
+            const convo = await addConversation(
+              title,
+              updateParticipants,
+              props.client,
+              addNotifications
+            );
+
+            console.log("Conversation created successfully:", convo);
+            setIsModalOpen(false);
+            updateCurrentConversation(convo.sid);
+          } catch (error) {
+            console.error("Error creating conversation:", error);
+            addNotifications &&
+              addNotifications([
+                {
+                  id: Date.now(),
+                  message: "Failed to create conversation.",
+                  variant: "error",
+                  dismissAfter: 5000,
+                },
+              ]);
+          }
         }}
       />
     </>

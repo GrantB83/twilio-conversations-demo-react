@@ -1,3 +1,15 @@
+declare global {
+  interface Window {
+    firebaseConfig: {
+      apiKey: string;
+      authDomain: string;
+      projectId: string;
+      storageBucket: string;
+      messagingSenderId: string;
+      appId: string;
+    };
+  }
+}
 import { FirebaseApp, initializeApp } from "firebase/app";
 import {
   Messaging,
@@ -11,25 +23,24 @@ let app: FirebaseApp;
 let messaging: Messaging;
 let initialized = false;
 
-// Fetch Firebase configuration dynamically
-const loadFirebaseConfig = async (): Promise<void> => {
-  try {
-    const response = await fetch("/firebase-config.js");
-    const text = await response.text();
-    const config = eval(`(${text})`); // Parse the JavaScript object from the file
-    console.log("Loaded Firebase Config:", config);
+try {
+  // Access the Firebase Config from the extended Window interface
+  const firebaseConfig = window.firebaseConfig;
 
-    app = initializeApp(config);
-    messaging = getMessaging(app);
-    initialized = true;
-
-    console.log("Firebase initialized successfully");
-  } catch (error) {
-    console.error("Error loading Firebase Config:", error);
+  if (!firebaseConfig) {
+    throw new Error("Firebase config is not defined");
   }
-};
 
-loadFirebaseConfig();
+  console.log("Loaded Firebase Config:", firebaseConfig);
+
+  app = initializeApp(firebaseConfig);
+  messaging = getMessaging(app);
+  initialized = true;
+
+  console.log("Firebase initialized successfully");
+} catch (error) {
+  console.error("Error initializing Firebase:", error);
+}
 
 export const initFcmServiceWorker = async (): Promise<void> => {
   if (!initialized) {

@@ -1,12 +1,12 @@
 console.log("Loaded Firebase Config:", (window as any).firebaseConfig);
 import { FirebaseApp, initializeApp } from "firebase/app";
-import firebaseConfig from "../public/firebase-config.js";
 import {
+  firebaseConfig
   Messaging,
   getMessaging,
   getToken,
   onMessage,
-} from "firebase/messaging";
+} from "../public/firebase-config.js";
 import { Client, PushNotification } from "@twilio/conversations";
 
 let app: FirebaseApp;
